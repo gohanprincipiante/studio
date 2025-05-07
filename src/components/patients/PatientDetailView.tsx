@@ -44,32 +44,26 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
 
   useEffect(() => {
     setIsLoading(true);
-    setPatient(null); // Reset patient state on new promise/id
-    setError(null);   // Reset error state
+    setPatient(null);
+    setError(null);
 
     if (patientPromise && typeof patientPromise.then === 'function') {
-      const thenResult = patientPromise.then(data => {
-        setPatient(data);
-        // setError(null); // Already called above
-        return data; 
-      });
-
-      if (thenResult && typeof thenResult.catch === 'function') {
-        thenResult.catch(err => {
-          console.error("Error al cargar detalles del paciente (en catch):", err);
+      patientPromise
+        .then(data => {
+          setPatient(data);
+          // Error state is already null from the start of useEffect
+        })
+        .catch(err => {
+          console.error("Error al cargar detalles del paciente:", err);
           setError("Error al cargar detalles del paciente. Por favor, intente de nuevo.");
-        }).finally(() => {
+        })
+        .finally(() => {
           setIsLoading(false);
         });
-      } else {
-        console.error("patientPromise.then() no devolvió una promesa válida o es undefined.");
-        setError("Error interno al procesar los datos del paciente.");
-        setIsLoading(false);
-      }
     } else {
       if (patientPromise === undefined || patientPromise === null) {
         console.warn("patientPromise no fue proporcionado a PatientDetailView o es null/undefined. No se intentará cargar.");
-        // No error is set here, as parent might intentionally not provide promise yet.
+        // No error is set here if promise is intentionally not provided yet.
       } else {
         console.error("patientPromise no es un objeto 'thenable' válido:", patientPromise);
         setError("No se pudieron cargar los datos del paciente (referencia de datos no válida).");
@@ -82,7 +76,7 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
   const handleFormSubmit = async (data: PatientFormData, id?: string) => {
     if (id && patient) {
       const dobDate = parseLocalDate(data.dob);
-      const age = dobDate ? differenceInYears(new Date(), dobDate) : undefined; // Age calculation should use consistent date logic
+      const age = dobDate ? differenceInYears(new Date(), dobDate) : undefined; 
       const updatedPatient = { ...patient, ...data, age, id, updatedAt: new Date() };
       setPatient(updatedPatient);
       toast({ title: "Paciente Actualizado", description: `Los datos de ${data.fullName} han sido actualizados.` });
@@ -95,11 +89,11 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
     if (typeof dateValue === 'string') {
       return parseLocalDate(dateValue);
     }
-    if (typeof (dateValue as any).toDate === 'function') {
+    if (typeof (dateValue as any).toDate === 'function') { // Firebase Timestamp
         const tsDate = (dateValue as Timestamp).toDate();
         return new Date(Date.UTC(tsDate.getUTCFullYear(), tsDate.getUTCMonth(), tsDate.getUTCDate()));
     }
-    if (dateValue instanceof Date) {
+    if (dateValue instanceof Date) { // Standard JS Date
         return new Date(Date.UTC(dateValue.getUTCFullYear(), dateValue.getUTCMonth(), dateValue.getUTCDate()));
     }
     return null;
@@ -133,6 +127,8 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
   }
   
   if (!patient) { 
+      // This case should ideally be covered by isLoading or error states,
+      // but kept as a fallback.
       return <p className="text-muted-foreground py-4 text-center">Cargando datos del paciente...</p>;
   }
   
