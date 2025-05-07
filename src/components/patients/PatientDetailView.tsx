@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Edit, UserCircle, Calendar, MapPin, Phone, ShieldAlert } from 'lucide-react';
 import PatientFormDialog from './PatientFormDialog';
 import { useToast } from '@/hooks/use-toast';
-import { format, parse } from 'date-fns';
+import { format, parse, differenceInYears } from 'date-fns';
 import { es } from 'date-fns/locale'; // Import Spanish locale
 import { Skeleton } from '../ui/skeleton';
+import { cn } from '@/lib/utils';
 
 interface PatientDetailViewProps {
   patientPromise: Promise<Patient>;
@@ -20,19 +21,19 @@ interface PatientDetailViewProps {
 // Helper to parse YYYY-MM-DD string as local date
 const parseLocalDate = (dateString: string | undefined): Date | null => {
   if (!dateString) return null;
-  // Try to parse as YYYY-MM-DD first
   const parts = dateString.split('-');
   if (parts.length === 3) {
     const year = parseInt(parts[0], 10);
     const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
     const day = parseInt(parts[2], 10);
     if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-      return new Date(year, month, day);
+      // Create date in UTC to avoid timezone shifts, then treat as local
+      return new Date(Date.UTC(year, month, day));
     }
   }
   // Fallback for other date string formats or if already a Date object passed as string
   const date = new Date(dateString);
-  return isNaN(date.getTime()) ? null : new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return isNaN(date.getTime()) ? null : new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 };
 
 
@@ -45,24 +46,35 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
 
   useEffect(() => {
     setIsLoading(true);
-    patientPromise
-      .then(data => {
-        setPatient(data);
-        setError(null);
-      })
-      .catch(err => {
-        console.error("Error al cargar detalles del paciente:", err);
-        setError("Error al cargar detalles del paciente. Por favor, intente de nuevo.");
-        setPatient(null);
-      })
-      .finally(() => setIsLoading(false));
+    if (patientPromise) {
+      patientPromise
+        .then(data => {
+          setPatient(data);
+          setError(null);
+        })
+        .catch(err => {
+          console.error("Error al cargar detalles del paciente:", err);
+          setError("Error al cargar detalles del paciente. Por favor, intente de nuevo.");
+          setPatient(null);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    } else {
+      console.error("patientPromise no fue proporcionado a PatientDetailView.");
+      setError("No se pudieron cargar los datos del paciente (referencia de datos no válida).");
+      setPatient(null);
+      setIsLoading(false);
+    }
   }, [patientPromise, patientId]);
 
 
   const handleFormSubmit = async (data: PatientFormData, id?: string) => {
     // Simulate API call
     if (id && patient) {
-      const updatedPatient = { ...patient, ...data, id, updatedAt: new Date() };
+      const dobDate = parseLocalDate(data.dob);
+      const age = dobDate ? differenceInYears(new Date(), dobDate) : undefined;
+      const updatedPatient = { ...patient, ...data, age, id, updatedAt: new Date() };
       setPatient(updatedPatient); // Update local state
       // TODO: Actual Firebase update call
       toast({ title: "Paciente Actualizado", description: `Los datos de ${data.fullName} han sido actualizados.` });
@@ -75,10 +87,14 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
     if (typeof dateValue === 'string') {
       return parseLocalDate(dateValue);
     }
-    if (typeof (dateValue as any).toDate === 'function') {
-      return (dateValue as Timestamp).toDate();
+    if (typeof (dateValue as any).toDate === 'function') { // Firebase Timestamp
+        const tsDate = (dateValue as Timestamp).toDate();
+        return new Date(Date.UTC(tsDate.getUTCFullYear(), tsDate.getUTCMonth(), tsDate.getUTCDate()));
     }
-    return dateValue instanceof Date ? dateValue : null;
+    if (dateValue instanceof Date) {
+        return new Date(Date.UTC(dateValue.getUTCFullYear(), dateValue.getUTCMonth(), dateValue.getUTCDate()));
+    }
+    return null;
   }
   
   if (isLoading) {
@@ -108,21 +124,23 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
     return <p className="text-muted-foreground">Datos del paciente no disponibles.</p>;
   }
   
-  const calculateAge = (dobString: string) => {
+  const calculateAgeDisplay = (dobString: string | undefined): string => {
+    if (!dobString) return 'N/A';
     const birthDate = parseLocalDate(dobString);
     if (!birthDate) return 'N/A';
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    // Use current date in UTC to match birthDate's UTC nature for consistent calculation
+    const today = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate()));
+    let age = today.getUTCFullYear() - birthDate.getUTCFullYear();
+    const m = today.getUTCMonth() - birthDate.getUTCMonth();
+    if (m < 0 || (m === 0 && today.getUTCDate() < birthDate.getUTCDate())) {
         age--;
     }
-    return age;
+    return `${age} años`;
   };
 
   const createdAtDate = getDisplayDate(patient.createdAt);
   const updatedAtDate = getDisplayDate(patient.updatedAt);
-  const dobDate = parseLocalDate(patient.dob);
+  const dobDate = getDisplayDate(patient.dob);
 
   return (
     <div className="space-y-6">
@@ -139,7 +157,7 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
       <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 text-sm">
         <InfoItem icon={<ShieldAlert className="h-5 w-5 text-primary" />} label="DNI / ID Nacional" value={patient.nationalId} />
         <InfoItem icon={<Calendar className="h-5 w-5 text-primary" />} label="Fecha de Nacimiento" value={dobDate ? format(dobDate, 'PPP', { locale: es }) : 'N/A'} />
-        <InfoItem icon={<UserCircle className="h-5 w-5 text-primary" />} label="Edad" value={patient.dob ? `${calculateAge(patient.dob)} años` : 'N/A'} />
+        <InfoItem icon={<UserCircle className="h-5 w-5 text-primary" />} label="Edad" value={calculateAgeDisplay(patient.dob)} />
         <InfoItem icon={<Phone className="h-5 w-5 text-primary" />} label="Teléfono" value={patient.phone} />
         <InfoItem icon={<MapPin className="h-5 w-5 text-primary" />} label="Dirección" value={patient.address} className="md:col-span-2" />
       </div>
