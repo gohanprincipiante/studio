@@ -14,7 +14,7 @@ import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
 
 interface PatientDetailViewProps {
-  patientPromise: Promise<Patient> | undefined; // Allow undefined
+  patientPromise: Promise<Patient> | undefined;
   patientId: string;
 }
 
@@ -27,11 +27,13 @@ const parseLocalDate = (dateString: string | undefined): Date | null => {
     const month = parseInt(parts[1], 10) - 1;
     const day = parseInt(parts[2], 10);
     if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+      // Ensure UTC interpretation to avoid timezone shifts if dates are meant to be timezone-agnostic
       return new Date(Date.UTC(year, month, day));
     }
   }
+  // Fallback for other date string formats, attempting to parse as local and then converting to UTC for consistency
   const date = new Date(dateString);
-  return isNaN(date.getTime()) ? null : new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  return isNaN(date.getTime()) ? null : new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
 };
 
 
@@ -48,53 +50,67 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
     setError(null);
 
     if (patientPromise && typeof patientPromise.then === 'function') {
-      patientPromise
-        .then(data => {
-          setPatient(data);
-          // Error state is already null from the start of useEffect
-        })
-        .catch(err => {
-          console.error("Error al cargar detalles del paciente:", err);
-          setError("Error al cargar detalles del paciente. Por favor, intente de nuevo.");
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
+      const thenResult = patientPromise.then(data => {
+        setPatient(data);
+      });
+
+      // Defensive check: Ensure thenResult is a promise-like object with .catch and .finally
+      if (thenResult && typeof thenResult.catch === 'function' && typeof thenResult.finally === 'function') {
+        thenResult
+          .catch(err => {
+            console.error("Error al cargar detalles del paciente:", err);
+            setError("Error al cargar detalles del paciente. Por favor, intente de nuevo.");
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
+      } else {
+        // This case implies patientPromise.then() did not return a standard promise.
+        console.error("patientPromise.then() no devolvió un objeto de promesa válido. Resultado:", thenResult);
+        setError("Error interno al procesar los datos del paciente.");
+        setIsLoading(false);
+      }
     } else {
       if (patientPromise === undefined || patientPromise === null) {
-        console.warn("patientPromise no fue proporcionado a PatientDetailView o es null/undefined. No se intentará cargar.");
-        // No error is set here if promise is intentionally not provided yet.
+        // console.warn("patientPromise no fue proporcionado a PatientDetailView o es null/undefined. No se cargan datos.");
+        // It's valid for no promise to be provided initially, so don't set an error.
+        // isLoading will be set to false, and the UI will show "no data" or similar.
       } else {
+        // patientPromise exists but is not a thenable object
         console.error("patientPromise no es un objeto 'thenable' válido:", patientPromise);
         setError("No se pudieron cargar los datos del paciente (referencia de datos no válida).");
       }
-      setIsLoading(false); 
+      setIsLoading(false);
     }
   }, [patientPromise, patientId]);
 
 
   const handleFormSubmit = async (data: PatientFormData, id?: string) => {
+    // Simulate API call - TODO: Replace with actual Firebase update
     if (id && patient) {
-      const dobDate = parseLocalDate(data.dob);
+      const dobDate = parseLocalDate(data.dob); // Use UTC parsing
       const age = dobDate ? differenceInYears(new Date(), dobDate) : undefined; 
       const updatedPatient = { ...patient, ...data, age, id, updatedAt: new Date() };
       setPatient(updatedPatient);
+      // TODO: Persist updatedPatient to Firebase
       toast({ title: "Paciente Actualizado", description: `Los datos de ${data.fullName} han sido actualizados.` });
     }
     setIsEditing(false);
   };
-
+  
   const getDisplayDate = (dateValue: Date | Timestamp | string | undefined): Date | null => {
     if (!dateValue) return null;
     if (typeof dateValue === 'string') {
-      return parseLocalDate(dateValue);
+      return parseLocalDate(dateValue); // Uses UTC parsing
+    }
+    if (dateValue instanceof Date) { // Standard JS Date
+        // Ensure it's treated as UTC if it's from a local context
+        return new Date(Date.UTC(dateValue.getFullYear(), dateValue.getMonth(), dateValue.getDate()));
     }
     if (typeof (dateValue as any).toDate === 'function') { // Firebase Timestamp
         const tsDate = (dateValue as Timestamp).toDate();
+        // Timestamps are usually UTC, convert to JS Date object in UTC
         return new Date(Date.UTC(tsDate.getUTCFullYear(), tsDate.getUTCMonth(), tsDate.getUTCDate()));
-    }
-    if (dateValue instanceof Date) { // Standard JS Date
-        return new Date(Date.UTC(dateValue.getUTCFullYear(), dateValue.getUTCMonth(), dateValue.getUTCDate()));
     }
     return null;
   }
@@ -127,15 +143,14 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
   }
   
   if (!patient) { 
-      // This case should ideally be covered by isLoading or error states,
-      // but kept as a fallback.
       return <p className="text-muted-foreground py-4 text-center">Cargando datos del paciente...</p>;
   }
   
   const calculateAgeDisplay = (dobString: string | undefined): string => {
     if (!dobString) return 'N/A';
-    const birthDate = parseLocalDate(dobString);
+    const birthDate = parseLocalDate(dobString); // Use UTC parsing
     if (!birthDate) return 'N/A';
+    // Ensure 'today' is also UTC for correct age calculation
     const today = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate()));
     let age = today.getUTCFullYear() - birthDate.getUTCFullYear();
     const m = today.getUTCMonth() - birthDate.getUTCMonth();
