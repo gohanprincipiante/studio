@@ -8,13 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Edit, UserCircle, Calendar, MapPin, Phone, ShieldAlert } from 'lucide-react';
 import PatientFormDialog from './PatientFormDialog';
 import { useToast } from '@/hooks/use-toast';
-import { format, parse, differenceInYears } from 'date-fns';
-import { es } from 'date-fns/locale'; // Import Spanish locale
+import { format, differenceInYears } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
 
 interface PatientDetailViewProps {
-  patientPromise: Promise<Patient>;
+  patientPromise: Promise<Patient> | undefined; // Allow undefined
   patientId: string;
 }
 
@@ -24,14 +24,12 @@ const parseLocalDate = (dateString: string | undefined): Date | null => {
   const parts = dateString.split('-');
   if (parts.length === 3) {
     const year = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+    const month = parseInt(parts[1], 10) - 1;
     const day = parseInt(parts[2], 10);
     if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-      // Create date in UTC to avoid timezone shifts, then treat as local
       return new Date(Date.UTC(year, month, day));
     }
   }
-  // Fallback for other date string formats or if already a Date object passed as string
   const date = new Date(dateString);
   return isNaN(date.getTime()) ? null : new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 };
@@ -46,37 +44,47 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
 
   useEffect(() => {
     setIsLoading(true);
-    if (patientPromise) {
-      patientPromise
-        .then(data => {
-          setPatient(data);
-          setError(null);
-        })
-        .catch(err => {
-          console.error("Error al cargar detalles del paciente:", err);
+    setPatient(null); // Reset patient state on new promise/id
+    setError(null);   // Reset error state
+
+    if (patientPromise && typeof patientPromise.then === 'function') {
+      const thenResult = patientPromise.then(data => {
+        setPatient(data);
+        // setError(null); // Already called above
+        return data; 
+      });
+
+      if (thenResult && typeof thenResult.catch === 'function') {
+        thenResult.catch(err => {
+          console.error("Error al cargar detalles del paciente (en catch):", err);
           setError("Error al cargar detalles del paciente. Por favor, intente de nuevo.");
-          setPatient(null);
-        })
-        .finally(() => {
+        }).finally(() => {
           setIsLoading(false);
         });
+      } else {
+        console.error("patientPromise.then() no devolvió una promesa válida o es undefined.");
+        setError("Error interno al procesar los datos del paciente.");
+        setIsLoading(false);
+      }
     } else {
-      console.error("patientPromise no fue proporcionado a PatientDetailView.");
-      setError("No se pudieron cargar los datos del paciente (referencia de datos no válida).");
-      setPatient(null);
-      setIsLoading(false);
+      if (patientPromise === undefined || patientPromise === null) {
+        console.warn("patientPromise no fue proporcionado a PatientDetailView o es null/undefined. No se intentará cargar.");
+        // No error is set here, as parent might intentionally not provide promise yet.
+      } else {
+        console.error("patientPromise no es un objeto 'thenable' válido:", patientPromise);
+        setError("No se pudieron cargar los datos del paciente (referencia de datos no válida).");
+      }
+      setIsLoading(false); 
     }
   }, [patientPromise, patientId]);
 
 
   const handleFormSubmit = async (data: PatientFormData, id?: string) => {
-    // Simulate API call
     if (id && patient) {
       const dobDate = parseLocalDate(data.dob);
-      const age = dobDate ? differenceInYears(new Date(), dobDate) : undefined;
+      const age = dobDate ? differenceInYears(new Date(), dobDate) : undefined; // Age calculation should use consistent date logic
       const updatedPatient = { ...patient, ...data, age, id, updatedAt: new Date() };
-      setPatient(updatedPatient); // Update local state
-      // TODO: Actual Firebase update call
+      setPatient(updatedPatient);
       toast({ title: "Paciente Actualizado", description: `Los datos de ${data.fullName} han sido actualizados.` });
     }
     setIsEditing(false);
@@ -87,7 +95,7 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
     if (typeof dateValue === 'string') {
       return parseLocalDate(dateValue);
     }
-    if (typeof (dateValue as any).toDate === 'function') { // Firebase Timestamp
+    if (typeof (dateValue as any).toDate === 'function') {
         const tsDate = (dateValue as Timestamp).toDate();
         return new Date(Date.UTC(tsDate.getUTCFullYear(), tsDate.getUTCMonth(), tsDate.getUTCDate()));
     }
@@ -120,15 +128,18 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
     return <div className="text-destructive p-4 border border-destructive bg-destructive/10 rounded-md">{error}</div>;
   }
 
-  if (!patient) {
-    return <p className="text-muted-foreground">Datos del paciente no disponibles.</p>;
+  if (!patient && !isLoading) { 
+    return <p className="text-muted-foreground py-4 text-center">Datos del paciente no disponibles o no encontrados.</p>;
+  }
+  
+  if (!patient) { 
+      return <p className="text-muted-foreground py-4 text-center">Cargando datos del paciente...</p>;
   }
   
   const calculateAgeDisplay = (dobString: string | undefined): string => {
     if (!dobString) return 'N/A';
     const birthDate = parseLocalDate(dobString);
     if (!birthDate) return 'N/A';
-    // Use current date in UTC to match birthDate's UTC nature for consistent calculation
     const today = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate()));
     let age = today.getUTCFullYear() - birthDate.getUTCFullYear();
     const m = today.getUTCMonth() - birthDate.getUTCMonth();
