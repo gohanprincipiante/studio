@@ -14,7 +14,7 @@ import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
 
 interface PatientDetailViewProps {
-  patientPromise: Promise<Patient> | undefined;
+  patientPromise: Promise<Patient | undefined> | undefined; // Allow Patient to be undefined from promise
   patientId: string;
 }
 
@@ -50,37 +50,34 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
     setError(null);
 
     if (patientPromise && typeof patientPromise.then === 'function') {
-      const thenResult = patientPromise.then(data => {
-        setPatient(data);
-      });
-
-      // Defensive check: Ensure thenResult is a promise-like object with .catch and .finally
-      if (thenResult && typeof thenResult.catch === 'function' && typeof thenResult.finally === 'function') {
-        thenResult
-          .catch(err => {
-            console.error("Error al cargar detalles del paciente:", err);
-            setError("Error al cargar detalles del paciente. Por favor, intente de nuevo.");
-          })
-          .finally(() => {
-            setIsLoading(false);
-          });
-      } else {
-        // This case implies patientPromise.then() did not return a standard promise.
-        console.error("patientPromise.then() no devolvió un objeto de promesa válido. Resultado:", thenResult);
-        setError("Error interno al procesar los datos del paciente.");
-        setIsLoading(false);
-      }
+      patientPromise
+        .then(data => {
+          if (data) {
+            setPatient(data);
+          } else {
+            // This case handles if the promise resolves but with undefined data (e.g. patient not found but not an error)
+            setError("Paciente no encontrado.");
+            setPatient(null);
+          }
+        })
+        .catch(err => {
+          console.error("Error al cargar detalles del paciente:", err);
+          setError("Error al cargar detalles del paciente. Por favor, intente de nuevo.");
+          setPatient(null); // Ensure patient is null on error
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     } else {
-      if (patientPromise === undefined || patientPromise === null) {
-        // console.warn("patientPromise no fue proporcionado a PatientDetailView o es null/undefined. No se cargan datos.");
-        // It's valid for no promise to be provided initially, so don't set an error.
-        // isLoading will be set to false, and the UI will show "no data" or similar.
-      } else {
-        // patientPromise exists but is not a thenable object
+      // Handle cases where patientPromise is not a valid promise
+      if (patientPromise !== undefined && patientPromise !== null) {
+        // If patientPromise exists but is not a thenable, it's an issue.
         console.error("patientPromise no es un objeto 'thenable' válido:", patientPromise);
         setError("No se pudieron cargar los datos del paciente (referencia de datos no válida).");
       }
-      setIsLoading(false);
+      // If patientPromise is undefined or null, it might be an initial state.
+      // The UI will show "Cargando..." or relevant error/no data message.
+      setIsLoading(false); // Ensure loading state is correctly set.
     }
   }, [patientPromise, patientId]);
 
@@ -138,12 +135,8 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
     return <div className="text-destructive p-4 border border-destructive bg-destructive/10 rounded-md">{error}</div>;
   }
 
-  if (!patient && !isLoading) { 
+  if (!patient) { // Covers null patient state after loading/error
     return <p className="text-muted-foreground py-4 text-center">Datos del paciente no disponibles o no encontrados.</p>;
-  }
-  
-  if (!patient) { 
-      return <p className="text-muted-foreground py-4 text-center">Cargando datos del paciente...</p>;
   }
   
   const calculateAgeDisplay = (dobString: string | undefined): string => {

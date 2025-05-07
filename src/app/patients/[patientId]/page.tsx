@@ -5,21 +5,22 @@ import PatientDetailView from '@/components/patients/PatientDetailView';
 import MedicalRecordList from '@/components/medical-records/MedicalRecordList';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { Patient, MedicalRecord } from '@/types'; // Ensure Patient type is imported
 
 // Mock data fetching functions - replace with actual Firebase calls
-async function getPatientDetails(patientId: string) {
+async function getPatientDetails(patientId: string): Promise<Patient | undefined> {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 500));
-  const mockPatients = [
+  const mockPatients: Patient[] = [
     { id: '1', fullName: 'Alice Wonderland', age: 30, nationalId: 'ID123456', dob: '1994-01-15', address: '123 Fantasy Lane', phone: '555-0101', createdAt: new Date() },
     { id: '2', fullName: 'Bob The Builder', age: 45, nationalId: 'ID789012', dob: '1979-05-20', address: '456 Construction Rd', phone: '555-0202', createdAt: new Date() },
   ];
   const patient = mockPatients.find(p => p.id === patientId);
-  if (!patient) throw new Error("Patient not found");
+  // if (!patient) throw new Error("Patient not found"); // Component handles undefined patient
   return patient;
 }
 
-async function getMedicalRecords(patientId: string) {
+async function getMedicalRecords(patientId: string): Promise<MedicalRecord[]> {
   await new Promise(resolve => setTimeout(resolve, 700));
   const mockMedicalRecords = [
     { id: 'mr1', patientId: '1', currentIllness: 'Flu', examResults: [{type: 'text', content: 'Normal temperature'}], treatment: 'Rest', nextAppointmentDate: '2024-08-15', createdAt: new Date() },
