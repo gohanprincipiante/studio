@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Patient, PatientFormData } from '@/types';
 import { DatePicker } from '@/components/ui/datepicker';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { format } from 'date-fns';
 
 const patientSchema = z.object({
   fullName: z.string().min(3, 'Full name must be at least 3 characters'),
@@ -118,7 +119,7 @@ const PatientFormDialog: FC<PatientFormDialogProps> = ({ isOpen, onClose, onSubm
               render={({ field }) => (
                  <DatePicker
                   date={field.value ? new Date(field.value + 'T00:00:00') : undefined} // Ensure date is parsed correctly locally
-                  setDate={(date) => field.onChange(date ? date.toISOString().split('T')[0] : '')}
+                  setDate={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
                   placeholder="Select date of birth"
                   disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                 />

@@ -2,6 +2,7 @@
 
 import type { FC } from 'react';
 import { useState, useEffect } from 'react';
+import type { Timestamp } from 'firebase/firestore';
 import { Patient, PatientFormData } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Edit, UserCircle, Calendar, MapPin, Phone, ShieldAlert } from 'lucide-react';
@@ -48,6 +49,14 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
     }
     setIsEditing(false);
   };
+
+  const getDisplayDate = (dateValue: Date | Timestamp | undefined): Date | null => {
+    if (!dateValue) return null;
+    if (typeof (dateValue as any).toDate === 'function') {
+      return (dateValue as Timestamp).toDate();
+    }
+    return dateValue as Date;
+  }
   
   if (isLoading) {
     return (
@@ -77,7 +86,7 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
   }
   
   const calculateAge = (dobString: string) => {
-    const birthDate = new Date(dobString);
+    const birthDate = new Date(dobString + 'T00:00:00'); // Ensure local interpretation
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const m = today.getMonth() - birthDate.getMonth();
@@ -86,6 +95,9 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
     }
     return age;
   };
+
+  const createdAtDate = getDisplayDate(patient.createdAt);
+  const updatedAtDate = getDisplayDate(patient.updatedAt);
 
   return (
     <div className="space-y-6">
@@ -107,10 +119,10 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
         <InfoItem icon={<MapPin className="h-5 w-5 text-primary" />} label="Address" value={patient.address} className="md:col-span-2" />
       </div>
 
-      {patient.createdAt && (
+      {createdAtDate && (
         <p className="text-xs text-muted-foreground mt-4">
-          Record created on: {format(new Date(patient.createdAt.toString()), 'PPP p')}
-          {patient.updatedAt && ` | Last updated: ${format(new Date(patient.updatedAt.toString()), 'PPP p')}`}
+          Record created on: {format(createdAtDate, 'PPP p')}
+          {updatedAtDate && ` | Last updated: ${format(updatedAtDate, 'PPP p')}`}
         </p>
       )}
 

@@ -22,6 +22,7 @@ import { MedicalRecord, MedicalRecordFormData, ExamResultText, ExamResultFile } 
 import { DatePicker } from '@/components/ui/datepicker';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileText, UploadCloud, XCircle } from 'lucide-react';
+import { format } from 'date-fns';
 
 const medicalRecordSchema = z.object({
   currentIllness: z.string().min(3, 'Current illness description must be at least 3 characters'),
@@ -233,7 +234,7 @@ const MedicalRecordFormDialog: FC<MedicalRecordFormDialogProps> = ({ isOpen, onC
                 render={({ field }) => (
                   <DatePicker
                     date={field.value ? new Date(field.value + 'T00:00:00') : undefined}
-                    setDate={(date) => field.onChange(date ? date.toISOString().split('T')[0] : null)}
+                    setDate={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : null)}
                     placeholder="Select next appointment"
                     disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))} // Disable past dates
                   />

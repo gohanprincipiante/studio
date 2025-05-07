@@ -15,7 +15,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { format, parseISO, isSameDay, isFuture, startOfDay } from 'date-fns';
+import { format, isSameDay, isFuture, startOfDay } from 'date-fns';
 import Link from 'next/link';
 
 // Mock data - replace with Firebase fetching.
@@ -26,21 +26,36 @@ const mockPatients: Patient[] = [
   { id: '4', fullName: 'Diana Prince', nationalId: 'ID000001', dob: '1980-03-22', address: 'Themyscira', phone: '555-0404' },
 ];
 
+// Helper to create a date string for mocking, avoiding timezone issues with simple new Date()
+const createMockDateString = (daysOffset: number): string => {
+  const date = new Date();
+  date.setDate(date.getDate() + daysOffset);
+  return format(date, 'yyyy-MM-dd');
+};
+
 const mockMedicalRecords: MedicalRecord[] = [
-  { id: 'mr1', patientId: '1', currentIllness: 'Flu', examResults: [{type: 'text', content: 'Normal temperature'}], treatment: 'Rest', nextAppointmentDate: format(new Date(new Date().setDate(new Date().getDate() + 3)), 'yyyy-MM-dd') },
-  { id: 'mr2', patientId: '2', currentIllness: 'Checkup', examResults: [{type: 'text', content: 'All good'}], treatment: 'None', nextAppointmentDate: format(new Date(new Date().setDate(new Date().getDate() + 7)), 'yyyy-MM-dd') },
-  { id: 'mr3', patientId: '1', currentIllness: 'Follow-up', examResults: [{type: 'text', content: 'Recovered'}], treatment: 'Discharge', nextAppointmentDate: format(new Date(new Date().setDate(new Date().getDate() + 10)), 'yyyy-MM-dd') },
-  { id: 'mr4', patientId: '4', currentIllness: 'Sprained Ankle', examResults: [{type: 'text', content: 'X-Ray clear'}], treatment: 'Rest and Ice', nextAppointmentDate: format(new Date(new Date().setDate(new Date().getDate() + 1)), 'yyyy-MM-dd') },
-  { id: 'mr5', patientId: '2', currentIllness: 'Dental Cleaning', examResults: [{type: 'text', content: 'No cavities'}], treatment: 'Floss more', nextAppointmentDate: format(new Date(), 'yyyy-MM-dd') }, // Today's appointment
+  { id: 'mr1', patientId: '1', currentIllness: 'Flu', examResults: [{type: 'text', content: 'Normal temperature'}], treatment: 'Rest', nextAppointmentDate: createMockDateString(3) },
+  { id: 'mr2', patientId: '2', currentIllness: 'Checkup', examResults: [{type: 'text', content: 'All good'}], treatment: 'None', nextAppointmentDate: createMockDateString(7) },
+  { id: 'mr3', patientId: '1', currentIllness: 'Follow-up', examResults: [{type: 'text', content: 'Recovered'}], treatment: 'Discharge', nextAppointmentDate: createMockDateString(10) },
+  { id: 'mr4', patientId: '4', currentIllness: 'Sprained Ankle', examResults: [{type: 'text', content: 'X-Ray clear'}], treatment: 'Rest and Ice', nextAppointmentDate: createMockDateString(1) },
+  { id: 'mr5', patientId: '2', currentIllness: 'Dental Cleaning', examResults: [{type: 'text', content: 'No cavities'}], treatment: 'Floss more', nextAppointmentDate: createMockDateString(0) }, // Today's appointment
 ];
+
 
 interface Appointment extends MedicalRecord {
   patient?: Patient; // Patient details denormalized or joined
 }
 
+// Helper to parse YYYY-MM-DD string as local date to avoid timezone issues
+const parseLocalDate = (dateString: string): Date => {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
+
 const AppointmentListClient: FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date()); // Default to today
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(startOfDay(new Date())); // Default to today, start of day
   const [showAllUpcoming, setShowAllUpcoming] = useState<boolean>(false);
 
   useEffect(() => {
@@ -53,8 +68,8 @@ const AppointmentListClient: FC = () => {
       })
       .sort((a, b) => { // Sort by date, then by patient name
         if (!a.nextAppointmentDate || !b.nextAppointmentDate) return 0;
-        const dateA = parseISO(a.nextAppointmentDate);
-        const dateB = parseISO(b.nextAppointmentDate);
+        const dateA = parseLocalDate(a.nextAppointmentDate);
+        const dateB = parseLocalDate(b.nextAppointmentDate);
         if (dateA.getTime() !== dateB.getTime()) {
           return dateA.getTime() - dateB.getTime();
         }
@@ -65,16 +80,22 @@ const AppointmentListClient: FC = () => {
 
   const filteredAppointments = useMemo(() => {
     if (showAllUpcoming) {
-      return appointments.filter(app => app.nextAppointmentDate && isFuture(parseISO(app.nextAppointmentDate)));
+      // For "all upcoming", compare against the start of today
+      const today = startOfDay(new Date());
+      return appointments.filter(app => {
+        if (!app.nextAppointmentDate) return false;
+        const appDate = parseLocalDate(app.nextAppointmentDate);
+        return isFuture(appDate) || isSameDay(appDate, today); // Include today as upcoming
+      });
     }
     if (!selectedDate) return [];
     return appointments.filter(app => 
-      app.nextAppointmentDate && isSameDay(parseISO(app.nextAppointmentDate), selectedDate)
+      app.nextAppointmentDate && isSameDay(parseLocalDate(app.nextAppointmentDate), selectedDate)
     );
   }, [appointments, selectedDate, showAllUpcoming]);
 
   const handleDateChange = (date?: Date) => {
-    setSelectedDate(date);
+    setSelectedDate(date ? startOfDay(date) : undefined);
     if (date) setShowAllUpcoming(false);
   }
 
@@ -83,7 +104,7 @@ const AppointmentListClient: FC = () => {
     if (!showAllUpcoming) { // If we are about to show all upcoming, clear selected date
       setSelectedDate(undefined);
     } else { // If we are toggling off "show all", default to today
-      setSelectedDate(new Date());
+      setSelectedDate(startOfDay(new Date()));
     }
   }
 
@@ -136,7 +157,7 @@ const AppointmentListClient: FC = () => {
                     </CardDescription>
                   </div>
                   <Badge variant="default" className="text-sm">
-                    {app.nextAppointmentDate ? format(parseISO(app.nextAppointmentDate), 'p, PPP') : 'Date N/A'}
+                    {app.nextAppointmentDate ? format(parseLocalDate(app.nextAppointmentDate), 'p, PPP') : 'Date N/A'}
                   </Badge>
                 </div>
               </CardHeader>

@@ -2,6 +2,7 @@
 
 import type { FC } from 'react';
 import { useState, useEffect } from 'react';
+import type { Timestamp } from 'firebase/firestore';
 import { MedicalRecord, MedicalRecordFormData, ExamResultFile } from '@/types';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Edit, Trash2, FileText, Download, ExternalLink } from 'lucide-react';
@@ -25,7 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '../ui/skeleton';
 
@@ -50,9 +51,9 @@ const MedicalRecordList: FC<MedicalRecordListProps> = ({ patientId, medicalRecor
       .then(data => {
         // Sort records by creation date, newest first
         const sortedData = data.sort((a,b) => {
-            const dateA = a.createdAt ? new Date(a.createdAt.toString()).getTime() : 0;
-            const dateB = b.createdAt ? new Date(b.createdAt.toString()).getTime() : 0;
-            return dateB - dateA;
+            const dateAValue = a.createdAt ? (a.createdAt as any).toDate?.().getTime() || (a.createdAt as Date).getTime() : 0;
+            const dateBValue = b.createdAt ? (b.createdAt as any).toDate?.().getTime() || (b.createdAt as Date).getTime() : 0;
+            return dateBValue - dateAValue;
         });
         setMedicalRecords(sortedData);
         setError(null);
@@ -132,6 +133,14 @@ const MedicalRecordList: FC<MedicalRecordListProps> = ({ patientId, medicalRecor
     setIsFormOpen(false);
     setEditingRecord(null);
   };
+  
+  const getDisplayDate = (dateValue: Date | Timestamp | undefined): Date | null => {
+    if (!dateValue) return null;
+    if (typeof (dateValue as any).toDate === 'function') {
+      return (dateValue as Timestamp).toDate();
+    }
+    return dateValue as Date;
+  }
 
   if (isLoading) {
     return (
@@ -172,63 +181,66 @@ const MedicalRecordList: FC<MedicalRecordListProps> = ({ patientId, medicalRecor
         <p className="text-center text-muted-foreground py-8">No medical records found for this patient.</p>
       ) : (
         <div className="space-y-4">
-          {medicalRecords.map(record => (
-            <Card key={record.id} className="shadow-md">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-xl">{record.currentIllness}</CardTitle>
-                  {record.createdAt && (
-                     <Badge variant="outline">{format(new Date(record.createdAt.toString()), 'PPP')}</Badge>
+          {medicalRecords.map(record => {
+            const createdAtDate = getDisplayDate(record.createdAt);
+            return (
+              <Card key={record.id} className="shadow-md">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-xl">{record.currentIllness}</CardTitle>
+                    {createdAtDate && (
+                       <Badge variant="outline">{format(createdAtDate, 'PPP')}</Badge>
+                    )}
+                  </div>
+                  {record.nextAppointmentDate && (
+                    <CardDescription>
+                      Next Appointment: <span className="font-semibold text-primary">{format(new Date(record.nextAppointmentDate + 'T00:00:00'), 'PPP')}</span>
+                    </CardDescription>
                   )}
-                </div>
-                {record.nextAppointmentDate && (
-                  <CardDescription>
-                    Next Appointment: <span className="font-semibold text-primary">{format(parseISO(record.nextAppointmentDate), 'PPP')}</span>
-                  </CardDescription>
-                )}
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <h4 className="font-semibold text-foreground">Exam Results:</h4>
-                  {record.examResults && record.examResults.length > 0 ? (
-                    <ul className="list-disc list-inside pl-4 text-sm space-y-1 mt-1">
-                    {record.examResults.map((result, index) => (
-                      <li key={index}>
-                        {result.type === 'text' ? (
-                          <p className="text-muted-foreground">{result.content}</p>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-primary" />
-                            <span className="text-muted-foreground">{result.fileName} ({result.contentType})</span>
-                            {/* In a real app, fileUrl would point to Firebase Storage */}
-                            <a href={(result as ExamResultFile).fileUrl} target="_blank" rel="noopener noreferrer" title="View File">
-                               <ExternalLink className="h-4 w-4 text-blue-500 hover:underline" />
-                            </a>
-                             {/* <Button variant="ghost" size="sm" onClick={() => alert('Download not implemented. URL: ' + (result as ExamResultFile).fileUrl)}>
-                                <Download className="h-4 w-4 mr-1" /> Download
-                            </Button> */}
-                          </div>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                  ) : <p className="text-sm text-muted-foreground">No exam results recorded.</p>}
-                </div>
-                 <div>
-                  <h4 className="font-semibold text-foreground">Treatment:</h4>
-                  <p className="text-sm text-muted-foreground">{record.treatment || 'N/A'}</p>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-end gap-2">
-                <Button variant="outline" size="sm" onClick={() => handleEditRecord(record)}>
-                  <Edit className="mr-1 h-4 w-4" /> Edit
-                </Button>
-                <Button variant="destructive" size="sm" onClick={() => setRecordToDelete(record)}>
-                  <Trash2 className="mr-1 h-4 w-4" /> Delete
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <h4 className="font-semibold text-foreground">Exam Results:</h4>
+                    {record.examResults && record.examResults.length > 0 ? (
+                      <ul className="list-disc list-inside pl-4 text-sm space-y-1 mt-1">
+                      {record.examResults.map((result, index) => (
+                        <li key={index}>
+                          {result.type === 'text' ? (
+                            <p className="text-muted-foreground">{result.content}</p>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-primary" />
+                              <span className="text-muted-foreground">{result.fileName} ({result.contentType})</span>
+                              {/* In a real app, fileUrl would point to Firebase Storage */}
+                              <a href={(result as ExamResultFile).fileUrl} target="_blank" rel="noopener noreferrer" title="View File">
+                                 <ExternalLink className="h-4 w-4 text-blue-500 hover:underline" />
+                              </a>
+                               {/* <Button variant="ghost" size="sm" onClick={() => alert('Download not implemented. URL: ' + (result as ExamResultFile).fileUrl)}>
+                                  <Download className="h-4 w-4 mr-1" /> Download
+                              </Button> */}
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                    ) : <p className="text-sm text-muted-foreground">No exam results recorded.</p>}
+                  </div>
+                   <div>
+                    <h4 className="font-semibold text-foreground">Treatment:</h4>
+                    <p className="text-sm text-muted-foreground">{record.treatment || 'N/A'}</p>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={() => handleEditRecord(record)}>
+                    <Edit className="mr-1 h-4 w-4" /> Edit
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={() => setRecordToDelete(record)}>
+                    <Trash2 className="mr-1 h-4 w-4" /> Delete
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })}
         </div>
       )}
 

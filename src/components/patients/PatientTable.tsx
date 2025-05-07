@@ -62,7 +62,7 @@ const PatientTable: FC<PatientTableProps> = ({ patients, onEdit, onDelete, onVie
                 <TableCell>
                   <Badge variant="secondary">{patient.nationalId}</Badge>
                 </TableCell>
-                <TableCell>{patient.dob ? format(new Date(patient.dob), "PPP") : 'N/A'}</TableCell>
+                <TableCell>{patient.dob ? format(new Date(patient.dob + 'T00:00:00'), "PPP") : 'N/A'}</TableCell>
                 <TableCell>{patient.phone}</TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" onClick={() => onView(patient.id)} title="View Details">

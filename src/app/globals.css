@@ -129,10 +129,6 @@ body {
   }
 }
 
-/*
-  The Inter font is already imported at the top of this file.
-  The body rule below applies it along with Geist Sans as a fallback.
-*/
 .geist-mono-font {
   font-family: var(--font-geist-mono), monospace;
 }
