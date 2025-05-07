@@ -9,31 +9,31 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-3xl font-bold text-primary">Welcome to PatientPal</CardTitle>
+          <CardTitle className="text-3xl font-bold text-primary">Bienvenido a PatientPal</CardTitle>
           <CardDescription className="text-lg">
-            Your modern solution for managing patient records and appointments seamlessly.
+            Su solución moderna para gestionar expedientes de pacientes y citas sin problemas.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6 md:grid-cols-2">
           <div className="space-y-4">
             <p>
-              PatientPal helps you streamline your medical practice by providing easy-to-use tools for:
+              PatientPal le ayuda a optimizar su práctica médica proporcionando herramientas fáciles de usar para:
             </p>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-              <li>Patient registration and record keeping</li>
-              <li>Managing medical histories and exam results</li>
-              <li>Tracking upcoming appointments</li>
-              <li>Securely storing patient data</li>
+              <li>Registro de pacientes y mantenimiento de expedientes</li>
+              <li>Gestión de historiales médicos y resultados de exámenes</li>
+              <li>Seguimiento de próximas citas</li>
+              <li>Almacenamiento seguro de datos de pacientes</li>
             </ul>
             <div className="flex gap-4 pt-4">
               <Button asChild size="lg">
                 <Link href="/patients">
-                  <Users className="mr-2 h-5 w-5" /> View Patients
+                  <Users className="mr-2 h-5 w-5" /> Ver Pacientes
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg">
                 <Link href="/appointments">
-                  <CalendarPlus className="mr-2 h-5 w-5" /> Upcoming Appointments
+                  <CalendarPlus className="mr-2 h-5 w-5" /> Próximas Citas
                 </Link>
               </Button>
             </div>
@@ -41,11 +41,11 @@ export default function DashboardPage() {
           <div>
             <Image
               src="https://picsum.photos/800/500"
-              alt="Healthcare professional working on a laptop"
+              alt="Profesional de la salud trabajando en una computadora portátil"
               width={800}
               height={500}
               className="rounded-lg object-cover shadow-md"
-              data-ai-hint="healthcare medical"
+              data-ai-hint="salud medicina"
             />
           </div>
         </CardContent>
@@ -53,27 +53,27 @@ export default function DashboardPage() {
 
       <div className="grid gap-6 md:grid-cols-3">
         <FeatureCard
-          title="Patient Management"
-          description="Easily add, view, edit, and search patient records. Keep all vital information organized and accessible."
+          title="Gestión de Pacientes"
+          description="Añada, vea, edite y busque expedientes de pacientes fácilmente. Mantenga toda la información vital organizada y accesible."
           icon={<Users className="h-8 w-8 text-primary" />}
           link="/patients"
-          linkText="Manage Patients"
+          linkText="Gestionar Pacientes"
         />
         <FeatureCard
-          title="Appointment Scheduling"
-          description="Track upcoming appointments and manage your schedule effectively. (Full scheduling coming soon)"
+          title="Programación de Citas"
+          description="Realice un seguimiento de las próximas citas y gestione su agenda de manera eficaz. (Programación completa próximamente)"
           icon={<CalendarPlus className="h-8 w-8 text-primary" />}
           link="/appointments"
-          linkText="View Appointments"
+          linkText="Ver Citas"
         />
          <FeatureCard
-          title="Secure Data Storage"
-          description="Leverage Firebase for secure and reliable storage of patient data and medical files."
+          title="Almacenamiento Seguro de Datos"
+          description="Aproveche Firebase para un almacenamiento seguro y confiable de datos de pacientes y archivos médicos."
           icon={
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
           }
           link="#"
-          linkText="Learn More (Coming Soon)"
+          linkText="Más Información (Próximamente)"
           disabledLink
         />
       </div>

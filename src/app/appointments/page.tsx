@@ -6,9 +6,9 @@ export default function AppointmentsPage() {
     <div className="space-y-6">
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-2xl font-semibold">Upcoming Appointments</CardTitle>
+          <CardTitle className="text-2xl font-semibold">Próximas Citas</CardTitle>
           <CardDescription>
-            View and manage scheduled appointments.
+            Ver y gestionar citas programadas.
           </CardDescription>
         </CardHeader>
         <CardContent>

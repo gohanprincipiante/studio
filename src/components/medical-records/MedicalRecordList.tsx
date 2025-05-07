@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale'; // Import Spanish locale
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '../ui/skeleton';
 
@@ -34,6 +35,22 @@ interface MedicalRecordListProps {
   patientId: string;
   medicalRecordsPromise: Promise<MedicalRecord[]>;
 }
+
+// Helper to parse YYYY-MM-DD string as local date
+const parseLocalDate = (dateString: string | undefined | null): Date | null => {
+  if (!dateString) return null;
+  const parts = dateString.split('-');
+  if (parts.length === 3) {
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+    const day = parseInt(parts[2], 10);
+    if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+      return new Date(year, month, day);
+    }
+  }
+  const date = new Date(dateString); // Fallback for other formats or if already a Date-like string
+  return isNaN(date.getTime()) ? null : new Date(date.getFullYear(), date.getMonth(), date.getDate());
+};
 
 const MedicalRecordList: FC<MedicalRecordListProps> = ({ patientId, medicalRecordsPromise }) => {
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
@@ -51,16 +68,16 @@ const MedicalRecordList: FC<MedicalRecordListProps> = ({ patientId, medicalRecor
       .then(data => {
         // Sort records by creation date, newest first
         const sortedData = data.sort((a,b) => {
-            const dateAValue = a.createdAt ? (a.createdAt as any).toDate?.().getTime() || (a.createdAt as Date).getTime() : 0;
-            const dateBValue = b.createdAt ? (b.createdAt as any).toDate?.().getTime() || (b.createdAt as Date).getTime() : 0;
+            const dateAValue = getDisplayDate(a.createdAt)?.getTime() || 0;
+            const dateBValue = getDisplayDate(b.createdAt)?.getTime() || 0;
             return dateBValue - dateAValue;
         });
         setMedicalRecords(sortedData);
         setError(null);
       })
       .catch(err => {
-        console.error("Failed to load medical records:", err);
-        setError("Failed to load medical records. Please try again.");
+        console.error("Error al cargar historial médico:", err);
+        setError("Error al cargar historial médico. Por favor, intente de nuevo.");
         setMedicalRecords([]);
       })
       .finally(() => setIsLoading(false));
@@ -83,8 +100,8 @@ const MedicalRecordList: FC<MedicalRecordListProps> = ({ patientId, medicalRecor
     setMedicalRecords(medicalRecords.filter(r => r.id !== recordToDelete.id));
     // TODO: Actual Firebase delete call, including deleting files from Storage
     toast({
-      title: "Medical Record Deleted",
-      description: `Record for ${recordToDelete.currentIllness} has been removed.`,
+      title: "Historial Médico Eliminado",
+      description: `El historial para ${recordToDelete.currentIllness} ha sido eliminado.`,
     });
     setRecordToDelete(null);
   };
@@ -118,7 +135,7 @@ const MedicalRecordList: FC<MedicalRecordListProps> = ({ patientId, medicalRecor
       setMedicalRecords(
         medicalRecords.map(r => (r.id === id ? { ...r, ...data, patientId, examResults: newOrUpdatedExamResults, id, updatedAt: new Date() } : r))
       );
-      toast({ title: "Medical Record Updated", description: `Record for ${data.currentIllness} updated.` });
+      toast({ title: "Historial Médico Actualizado", description: `El historial para ${data.currentIllness} ha sido actualizado.` });
     } else { // Adding
       const newRecord: MedicalRecord = {
         ...data,
@@ -128,18 +145,23 @@ const MedicalRecordList: FC<MedicalRecordListProps> = ({ patientId, medicalRecor
         createdAt: new Date(),
       };
       setMedicalRecords([newRecord, ...medicalRecords]); // Add to top of list
-      toast({ title: "Medical Record Added", description: `New record for ${data.currentIllness} added.` });
+      toast({ title: "Historial Médico Añadido", description: `Nuevo historial para ${data.currentIllness} añadido.` });
     }
     setIsFormOpen(false);
     setEditingRecord(null);
   };
   
-  const getDisplayDate = (dateValue: Date | Timestamp | undefined): Date | null => {
+  const getDisplayDate = (dateValue: Date | Timestamp | string | undefined): Date | null => {
     if (!dateValue) return null;
-    if (typeof (dateValue as any).toDate === 'function') {
+    if (typeof dateValue === 'string') {
+        // Assuming ISO string or a format Date constructor can handle
+        const d = new Date(dateValue);
+        return isNaN(d.getTime()) ? null : d;
+    }
+    if (typeof (dateValue as any).toDate === 'function') { // Firebase Timestamp
       return (dateValue as Timestamp).toDate();
     }
-    return dateValue as Date;
+    return dateValue instanceof Date ? dateValue : null;
   }
 
   if (isLoading) {
@@ -173,34 +195,35 @@ const MedicalRecordList: FC<MedicalRecordListProps> = ({ patientId, medicalRecor
       <div className="text-right">
         <Button onClick={handleAddRecord}>
           <PlusCircle className="mr-2 h-5 w-5" />
-          Add Medical Record
+          Añadir Historial Médico
         </Button>
       </div>
 
       {medicalRecords.length === 0 ? (
-        <p className="text-center text-muted-foreground py-8">No medical records found for this patient.</p>
+        <p className="text-center text-muted-foreground py-8">No se encontraron historiales médicos para este paciente.</p>
       ) : (
         <div className="space-y-4">
           {medicalRecords.map(record => {
             const createdAtDate = getDisplayDate(record.createdAt);
+            const nextAppointmentParsedDate = parseLocalDate(record.nextAppointmentDate);
             return (
               <Card key={record.id} className="shadow-md">
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-xl">{record.currentIllness}</CardTitle>
                     {createdAtDate && (
-                       <Badge variant="outline">{format(createdAtDate, 'PPP')}</Badge>
+                       <Badge variant="outline">{format(createdAtDate, 'PPP', { locale: es })}</Badge>
                     )}
                   </div>
-                  {record.nextAppointmentDate && (
+                  {nextAppointmentParsedDate && (
                     <CardDescription>
-                      Next Appointment: <span className="font-semibold text-primary">{format(new Date(record.nextAppointmentDate + 'T00:00:00'), 'PPP')}</span>
+                      Próxima Cita: <span className="font-semibold text-primary">{format(nextAppointmentParsedDate, 'PPP', { locale: es })}</span>
                     </CardDescription>
                   )}
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div>
-                    <h4 className="font-semibold text-foreground">Exam Results:</h4>
+                    <h4 className="font-semibold text-foreground">Resultados de Examen:</h4>
                     {record.examResults && record.examResults.length > 0 ? (
                       <ul className="list-disc list-inside pl-4 text-sm space-y-1 mt-1">
                       {record.examResults.map((result, index) => (
@@ -212,7 +235,7 @@ const MedicalRecordList: FC<MedicalRecordListProps> = ({ patientId, medicalRecor
                               <FileText className="h-4 w-4 text-primary" />
                               <span className="text-muted-foreground">{result.fileName} ({result.contentType})</span>
                               {/* In a real app, fileUrl would point to Firebase Storage */}
-                              <a href={(result as ExamResultFile).fileUrl} target="_blank" rel="noopener noreferrer" title="View File">
+                              <a href={(result as ExamResultFile).fileUrl} target="_blank" rel="noopener noreferrer" title="Ver Archivo">
                                  <ExternalLink className="h-4 w-4 text-blue-500 hover:underline" />
                               </a>
                                {/* <Button variant="ghost" size="sm" onClick={() => alert('Download not implemented. URL: ' + (result as ExamResultFile).fileUrl)}>
@@ -223,19 +246,19 @@ const MedicalRecordList: FC<MedicalRecordListProps> = ({ patientId, medicalRecor
                         </li>
                       ))}
                     </ul>
-                    ) : <p className="text-sm text-muted-foreground">No exam results recorded.</p>}
+                    ) : <p className="text-sm text-muted-foreground">No se registraron resultados de examen.</p>}
                   </div>
                    <div>
-                    <h4 className="font-semibold text-foreground">Treatment:</h4>
+                    <h4 className="font-semibold text-foreground">Tratamiento:</h4>
                     <p className="text-sm text-muted-foreground">{record.treatment || 'N/A'}</p>
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-end gap-2">
                   <Button variant="outline" size="sm" onClick={() => handleEditRecord(record)}>
-                    <Edit className="mr-1 h-4 w-4" /> Edit
+                    <Edit className="mr-1 h-4 w-4" /> Editar
                   </Button>
                   <Button variant="destructive" size="sm" onClick={() => setRecordToDelete(record)}>
-                    <Trash2 className="mr-1 h-4 w-4" /> Delete
+                    <Trash2 className="mr-1 h-4 w-4" /> Eliminar
                   </Button>
                 </CardFooter>
               </Card>
@@ -256,16 +279,16 @@ const MedicalRecordList: FC<MedicalRecordListProps> = ({ patientId, medicalRecor
         <AlertDialog open={!!recordToDelete} onOpenChange={() => setRecordToDelete(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+              <AlertDialogTitle>Confirmar Eliminación</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete the medical record for "{recordToDelete.currentIllness}"? 
-                This will also remove any associated files. This action cannot be undone.
+                ¿Está seguro de que desea eliminar el historial médico para "{recordToDelete.currentIllness}"? 
+                Esto también eliminará cualquier archivo asociado. Esta acción no se puede deshacer.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setRecordToDelete(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel onClick={() => setRecordToDelete(null)}>Cancelar</AlertDialogCancel>
               <AlertDialogAction onClick={handleDeleteRecord} className="bg-destructive hover:bg-destructive/90">
-                Delete Record
+                Eliminar Historial
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

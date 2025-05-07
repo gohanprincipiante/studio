@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format, isSameDay, isFuture, startOfDay } from 'date-fns';
+import { es } from 'date-fns/locale'; // Import Spanish locale
 import Link from 'next/link';
 
 // Mock data - replace with Firebase fetching.
@@ -113,17 +114,17 @@ const AppointmentListClient: FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 bg-card rounded-lg shadow">
         <div className="flex items-center gap-2">
           <Filter className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-medium">Filter Appointments</h3>
+          <h3 className="text-lg font-medium">Filtrar Citas</h3>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
           <DatePicker
             date={selectedDate}
             setDate={handleDateChange}
-            placeholder="Filter by date"
+            placeholder="Filtrar por fecha"
             className="w-full sm:w-[280px]"
           />
           <Button onClick={toggleShowAllUpcoming} variant="outline" className="w-full sm:w-auto">
-            {showAllUpcoming ? "Show Specific Date" : "Show All Upcoming"}
+            {showAllUpcoming ? "Mostrar Fecha Específica" : "Mostrar Todas las Próximas"}
           </Button>
         </div>
       </div>
@@ -134,11 +135,11 @@ const AppointmentListClient: FC = () => {
             <div className="mx-auto bg-primary/10 p-3 rounded-full w-fit">
               <CalendarDays className="h-12 w-12 text-primary" />
             </div>
-            <CardTitle className="mt-4">No Appointments</CardTitle>
+            <CardTitle className="mt-4">Sin Citas</CardTitle>
           </CardHeader>
           <CardContent>
             <CardDescription>
-              {showAllUpcoming ? "There are no upcoming appointments." : (selectedDate ? `No appointments scheduled for ${format(selectedDate, 'PPP')}.` : "Please select a date or show all upcoming appointments.")}
+              {showAllUpcoming ? "No hay próximas citas." : (selectedDate ? `No hay citas programadas para ${format(selectedDate, 'PPP', { locale: es })}.` : "Por favor seleccione una fecha o muestre todas las próximas citas.")}
             </CardDescription>
           </CardContent>
         </Card>
@@ -150,27 +151,27 @@ const AppointmentListClient: FC = () => {
                 <div className="flex justify-between items-start">
                   <div>
                     <CardTitle className="text-xl">
-                      {app.patient?.fullName || 'Unknown Patient'}
+                      {app.patient?.fullName || 'Paciente Desconocido'}
                     </CardTitle>
                     <CardDescription>
-                      Appointment for: {app.currentIllness}
+                      Cita para: {app.currentIllness}
                     </CardDescription>
                   </div>
                   <Badge variant="default" className="text-sm">
-                    {app.nextAppointmentDate ? format(parseLocalDate(app.nextAppointmentDate), 'p, PPP') : 'Date N/A'}
+                    {app.nextAppointmentDate ? format(parseLocalDate(app.nextAppointmentDate), 'p, PPP', { locale: es }) : 'Fecha N/A'}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="flex-grow">
                 <div className="space-y-2 text-sm">
-                  <p><strong className="text-foreground">Patient ID:</strong> {app.patient?.nationalId || 'N/A'}</p>
-                  <p><strong className="text-foreground">Treatment:</strong> {app.treatment || 'N/A'}</p>
+                  <p><strong className="text-foreground">ID Paciente:</strong> {app.patient?.nationalId || 'N/A'}</p>
+                  <p><strong className="text-foreground">Tratamiento:</strong> {app.treatment || 'N/A'}</p>
                 </div>
               </CardContent>
               <CardFooter>
                 <Button asChild variant="outline" className="w-full">
                   <Link href={`/patients/${app.patientId}`}>
-                    <Users className="mr-2 h-4 w-4" /> View Patient Details
+                    <Users className="mr-2 h-4 w-4" /> Ver Detalles del Paciente
                   </Link>
                 </Button>
               </CardFooter>

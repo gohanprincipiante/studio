@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'PatientPal - Medical Records Management',
-  description: 'Manage patient records and appointments efficiently.',
+  title: 'PatientPal - Gestión de Expedientes Médicos',
+  description: 'Gestiona expedientes de pacientes y citas de forma eficiente.',
 };
 
 export default function RootLayout({
@@ -27,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <body className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}>
         <SidebarProvider defaultOpen={true}>
           <div className="flex min-h-screen flex-col">

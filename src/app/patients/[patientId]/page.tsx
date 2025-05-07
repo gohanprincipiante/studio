@@ -40,7 +40,7 @@ export default async function PatientDetailPage({ params }: { params: { patientI
     <div className="space-y-6">
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-2xl font-semibold">Patient Profile</CardTitle>
+          <CardTitle className="text-2xl font-semibold">Perfil del Paciente</CardTitle>
         </CardHeader>
         <CardContent>
           <Suspense fallback={<PatientDetailSkeleton />}>
@@ -51,7 +51,7 @@ export default async function PatientDetailPage({ params }: { params: { patientI
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-2xl font-semibold">Medical History</CardTitle>
+          <CardTitle className="text-2xl font-semibold">Historial Médico</CardTitle>
         </CardHeader>
         <CardContent>
           <Suspense fallback={<MedicalRecordListSkeleton />}>

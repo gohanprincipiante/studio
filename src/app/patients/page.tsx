@@ -8,9 +8,9 @@ export default function PatientsPage() {
     <div className="space-y-6">
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="text-2xl font-semibold">Patient Management</CardTitle>
+          <CardTitle className="text-2xl font-semibold">Gestión de Pacientes</CardTitle>
           <CardDescription>
-            View, search, add, and manage patient records.
+            Ver, buscar, añadir y gestionar expedientes de pacientes.
           </CardDescription>
         </CardHeader>
         <CardContent>

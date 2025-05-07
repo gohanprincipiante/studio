@@ -81,8 +81,8 @@ const PatientListClient: FC = () => {
     // Simulate API call
     setPatients(patients.filter(p => p.id !== patientToDelete.id));
     toast({
-      title: "Patient Deleted",
-      description: `${patientToDelete.fullName} has been removed.`,
+      title: "Paciente Eliminado",
+      description: `${patientToDelete.fullName} ha sido eliminado.`,
       variant: "default",
     });
     setPatientToDelete(null);
@@ -92,11 +92,11 @@ const PatientListClient: FC = () => {
     // Simulate API call
     if (id) { // Editing
       setPatients(patients.map(p => p.id === id ? { ...p, ...data, id, updatedAt: new Date() } : p));
-      toast({ title: "Patient Updated", description: `${data.fullName} has been updated.` });
+      toast({ title: "Paciente Actualizado", description: `Los datos de ${data.fullName} han sido actualizados.` });
     } else { // Adding
       const newPatient: Patient = { ...data, id: String(Date.now()), createdAt: new Date() };
       setPatients([newPatient, ...patients]);
-      toast({ title: "Patient Added", description: `${data.fullName} has been registered.` });
+      toast({ title: "Paciente Añadido", description: `${data.fullName} ha sido registrado.` });
     }
     setIsFormOpen(false);
     setEditingPatient(null);
@@ -113,7 +113,7 @@ const PatientListClient: FC = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search by name or ID..."
+            placeholder="Buscar por nombre o ID..."
             value={searchTerm}
             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             className="pl-10"
@@ -121,7 +121,7 @@ const PatientListClient: FC = () => {
         </div>
         <Button onClick={handleAddPatient} className="w-full sm:w-auto">
           <PlusCircle className="mr-2 h-5 w-5" />
-          Add New Patient
+          Añadir Nuevo Paciente
         </Button>
       </div>
 
@@ -146,15 +146,15 @@ const PatientListClient: FC = () => {
         <AlertDialog open={!!patientToDelete} onOpenChange={() => setPatientToDelete(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the patient record for {patientToDelete.fullName}.
+                Esta acción no se puede deshacer. Esto eliminará permanentemente el expediente del paciente {patientToDelete.fullName}.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setPatientToDelete(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel onClick={() => setPatientToDelete(null)}>Cancelar</AlertDialogCancel>
               <AlertDialogAction onClick={handleDeletePatient} className="bg-destructive hover:bg-destructive/90">
-                Delete
+                Eliminar
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

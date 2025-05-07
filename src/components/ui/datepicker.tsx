@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { format } from "date-fns"
+import { es } from "date-fns/locale" // Import Spanish locale
 import { Calendar as CalendarIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -21,7 +22,7 @@ interface DatePickerProps {
   disabled?: (date: Date) => boolean;
 }
 
-export function DatePicker({ date, setDate, placeholder = "Pick a date", className, disabled }: DatePickerProps) {
+export function DatePicker({ date, setDate, placeholder = "Seleccione una fecha", className, disabled }: DatePickerProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -34,7 +35,7 @@ export function DatePicker({ date, setDate, placeholder = "Pick a date", classNa
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {date ? format(date, "PPP") : <span>{placeholder}</span>}
+          {date ? format(date, "PPP", { locale: es }) : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0">
@@ -44,6 +45,7 @@ export function DatePicker({ date, setDate, placeholder = "Pick a date", classNa
           onSelect={setDate}
           initialFocus
           disabled={disabled}
+          locale={es} // Pass Spanish locale to Calendar
         />
       </PopoverContent>
     </Popover>

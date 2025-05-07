@@ -21,9 +21,9 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard, matchExact: true },
-  { href: '/patients', label: 'Patients', icon: Users },
-  { href: '/appointments', label: 'Appointments', icon: CalendarClock },
+  { href: '/', label: 'Panel', icon: LayoutDashboard, matchExact: true },
+  { href: '/patients', label: 'Pacientes', icon: Users },
+  { href: '/appointments', label: 'Citas', icon: CalendarClock },
 ];
 
 const AppSidebar: FC = () => {
