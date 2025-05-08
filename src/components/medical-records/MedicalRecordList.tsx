@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { FC } from 'react';
@@ -64,23 +65,48 @@ const MedicalRecordList: FC<MedicalRecordListProps> = ({ patientId, medicalRecor
 
   useEffect(() => {
     setIsLoading(true);
-    medicalRecordsPromise
-      .then(data => {
-        // Sort records by creation date, newest first
-        const sortedData = data.sort((a,b) => {
-            const dateAValue = getDisplayDate(a.createdAt)?.getTime() || 0;
-            const dateBValue = getDisplayDate(b.createdAt)?.getTime() || 0;
-            return dateBValue - dateAValue;
+    setError(null); // Reset error at the beginning
+    setMedicalRecords([]); // Clear previous records
+
+    if (medicalRecordsPromise && typeof medicalRecordsPromise.then === 'function') {
+      const promiseToProcess = Promise.resolve(medicalRecordsPromise);
+
+      promiseToProcess
+        .then(data => {
+          if (Array.isArray(data)) {
+            const sortedData = data.sort((a, b) => {
+              const dateAValue = getDisplayDate(a.createdAt)?.getTime() || 0;
+              const dateBValue = getDisplayDate(b.createdAt)?.getTime() || 0;
+              return dateBValue - dateAValue;
+            });
+            setMedicalRecords(sortedData);
+            // setError(null); // Already null from the start of useEffect
+          } else {
+            // This case implies data is not an array as expected
+            console.error("Error al cargar historial médico: los datos recibidos no son un array.", data);
+            setError("Error al cargar historial médico: formato de datos inesperado.");
+            // setMedicalRecords([]); // Already cleared
+          }
+        })
+        .catch(err => {
+          console.error("Error al cargar historial médico (en .catch):", err);
+          setError("Error al cargar historial médico. Por favor, intente de nuevo.");
+          // setMedicalRecords([]); // Already cleared
+        })
+        .finally(() => {
+          setIsLoading(false);
         });
-        setMedicalRecords(sortedData);
-        setError(null);
-      })
-      .catch(err => {
-        console.error("Error al cargar historial médico:", err);
-        setError("Error al cargar historial médico. Por favor, intente de nuevo.");
-        setMedicalRecords([]);
-      })
-      .finally(() => setIsLoading(false));
+    } else {
+      // medicalRecordsPromise is not a valid promise-like object
+      if (!medicalRecordsPromise) {
+          setError("No se proporcionaron datos del historial médico para cargar (promesa nula o indefinida).");
+      } else {
+          setError("Referencia de datos del historial médico no válida (no es una promesa).");
+          console.error("medicalRecordsPromise no es un objeto 'thenable' válido:", medicalRecordsPromise);
+      }
+      setIsLoading(false);
+      // setMedicalRecords([]); // Already cleared
+    }
   }, [medicalRecordsPromise, patientId]);
 
 
