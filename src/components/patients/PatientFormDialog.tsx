@@ -59,6 +59,7 @@ const parseLocalDateStringToDate = (dateString: string | undefined | null): Date
 
 
 const PatientFormDialog: FC<PatientFormDialogProps> = ({ isOpen, onClose, onSubmit, defaultValues }) => {
+  const currentYear = new Date().getFullYear();
   const {
     control,
     register,
@@ -144,6 +145,9 @@ const PatientFormDialog: FC<PatientFormDialogProps> = ({ isOpen, onClose, onSubm
                   setDate={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
                   placeholder="Seleccionar fecha de nacimiento"
                   disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                  captionLayout="dropdown-buttons"
+                  fromYear={1900}
+                  toYear={currentYear}
                 />
               )}
             />

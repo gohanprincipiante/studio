@@ -4,6 +4,7 @@ import * as React from "react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale" // Import Spanish locale
 import { Calendar as CalendarIcon } from "lucide-react"
+import type { CaptionLayout } from "react-day-picker";
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -20,9 +21,21 @@ interface DatePickerProps {
   placeholder?: string;
   className?: string;
   disabled?: (date: Date) => boolean;
+  captionLayout?: CaptionLayout;
+  fromYear?: number;
+  toYear?: number;
 }
 
-export function DatePicker({ date, setDate, placeholder = "Seleccione una fecha", className, disabled }: DatePickerProps) {
+export function DatePicker({ 
+  date, 
+  setDate, 
+  placeholder = "Seleccione una fecha", 
+  className, 
+  disabled,
+  captionLayout,
+  fromYear,
+  toYear 
+}: DatePickerProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -46,6 +59,9 @@ export function DatePicker({ date, setDate, placeholder = "Seleccione una fecha"
           initialFocus
           disabled={disabled}
           locale={es} // Pass Spanish locale to Calendar
+          captionLayout={captionLayout}
+          fromYear={fromYear}
+          toYear={toYear}
         />
       </PopoverContent>
     </Popover>
