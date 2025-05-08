@@ -47,32 +47,60 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
     setError(null);
 
     if (patientPromise && typeof patientPromise.then === 'function') {
-      patientPromise
-        .then(data => {
-          if (data) {
-            setPatient(data);
-            // setError(null); // Already set at the beginning of useEffect
-          } else {
-            setError("Paciente no encontrado.");
-            setPatient(null); // Ensure patient is null if not found
-          }
-        })
-        .catch(err => {
-          console.error("Error al cargar detalles del paciente:", err);
-          setError("Error al cargar detalles del paciente. Por favor, intente de nuevo.");
-          setPatient(null); // Ensure patient is null on error
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-    } else {
-      // Handle cases where patientPromise is not a valid promise (e.g., undefined, null)
-      if (patientPromise === undefined || patientPromise === null) {
-        setError("No se proporcionaron datos del paciente para cargar.");
+      const promiseToProcess = Promise.resolve(patientPromise);
+
+      const thenResultPromise = promiseToProcess.then(data => {
+        if (data) {
+          setPatient(data);
+        } else {
+          setError("Paciente no encontrado.");
+          setPatient(null);
+        }
+      });
+
+      // Defensive check: Standard .then() always returns a Promise.
+      // If it's undefined or not a promise here, something is fundamentally wrong.
+      if (thenResultPromise && typeof thenResultPromise.catch === 'function' && typeof thenResultPromise.finally === 'function') {
+        thenResultPromise
+          .catch(err => {
+            console.error("Error al cargar detalles del paciente (en .catch):", err);
+            setError("Error al cargar detalles del paciente. Por favor, intente de nuevo.");
+            setPatient(null);
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
       } else {
-        // This case should be rare if patientPromise is typed correctly and originates from an async function
-        console.error("patientPromise no es un objeto 'thenable' válido:", patientPromise);
-        setError("No se pudieron cargar los datos del paciente (referencia de datos no válida).");
+        // This block executes if promiseToProcess.then() did not return a valid promise.
+        // This is highly unusual for standard Promise behavior.
+        console.error(
+          "Error Interno: .then() no devolvió un objeto de promesa válido. Resultado:",
+          thenResultPromise
+        );
+        setError("Error interno al procesar los datos del paciente. La cadena de promesas falló.");
+        
+        // Attempt to catch any error from the original promise directly,
+        // as chaining is broken, and ensure loading state is updated.
+        promiseToProcess
+          .catch(err => {
+            console.error("Error directamente de promiseToProcess (fallback):", err);
+            // Avoid overwriting a more specific error if one was already set by a partially executed .then callback
+            if (!error) { 
+                 setError("Error al cargar datos del paciente (falla en cadena de promesa).");
+            }
+          })
+          .finally(() => {
+            // Ensure isLoading is set to false even if the chain is broken.
+            setIsLoading(false);
+          });
+      }
+    } else {
+      // Handle cases where patientPromise is not a valid promise-like object initially.
+      if (!patientPromise) {
+          setError("No se proporcionaron datos del paciente para cargar (promesa nula o indefinida).");
+      } else {
+          setError("Referencia de datos del paciente no válida (no es una promesa).");
+          console.error("patientPromise no es un objeto 'thenable' válido:", patientPromise);
       }
       setIsLoading(false);
     }
@@ -205,3 +233,4 @@ const InfoItem: FC<InfoItemProps> = ({ icon, label, value, className }) => (
 
 
 export default PatientDetailView;
+
