@@ -40,10 +40,10 @@ export function DatePicker({
   className, 
   disabled,
   captionLayout = "dropdown-buttons",
-  fromYear, // Default will be handled by Calendar or react-day-picker if not provided
-  toYear,   // Default will be handled by Calendar or react-day-picker if not provided
+  fromYear,
+  toYear,
   popoverSide = "bottom", 
-  popoverAlign = "center", 
+  popoverAlign = "center", // Defaulted to center after previous request
   popoverSideOffset = 10,
 }: DatePickerProps) {
   return (
@@ -62,7 +62,7 @@ export function DatePicker({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-auto p-0" 
+        className="w-[320px] p-0" // Increased width from w-auto
         align={popoverAlign}
         side={popoverSide}
         sideOffset={popoverSideOffset}
@@ -73,13 +73,12 @@ export function DatePicker({
           onSelect={setDate}
           initialFocus
           disabled={disabled}
-          locale={es} // Pass Spanish locale to Calendar
+          locale={es}
           captionLayout={captionLayout}
-          fromYear={fromYear ?? 1900} // Pass through or use default
-          toYear={toYear ?? new Date().getFullYear()}     // Pass through or use default
+          fromYear={fromYear ?? 1900} 
+          toYear={toYear ?? new Date().getFullYear()}
         />
       </PopoverContent>
     </Popover>
   )
 }
-
