@@ -4,7 +4,9 @@ import * as React from "react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale" // Import Spanish locale
 import { Calendar as CalendarIcon } from "lucide-react"
-import type { CaptionLayout } from "react-day-picker";
+import type { CaptionLayout } from "react-day-picker"
+import type { PopoverContentProps as RadixPopoverContentProps } from "@radix-ui/react-popover"
+
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -21,9 +23,14 @@ interface DatePickerProps {
   placeholder?: string;
   className?: string;
   disabled?: (date: Date) => boolean;
+  // Calendar specific props
   captionLayout?: CaptionLayout;
   fromYear?: number;
   toYear?: number;
+  // PopoverContent specific props
+  popoverSide?: RadixPopoverContentProps['side'];
+  popoverAlign?: RadixPopoverContentProps['align'];
+  popoverSideOffset?: RadixPopoverContentProps['sideOffset'];
 }
 
 export function DatePicker({ 
@@ -33,8 +40,11 @@ export function DatePicker({
   className, 
   disabled,
   captionLayout = "dropdown-buttons",
-  fromYear = 1900,
-  toYear = new Date().getFullYear()
+  fromYear, // Default will be handled by Calendar or react-day-picker if not provided
+  toYear,   // Default will be handled by Calendar or react-day-picker if not provided
+  popoverSide = "bottom", 
+  popoverAlign = "center", 
+  popoverSideOffset = 10,
 }: DatePickerProps) {
   return (
     <Popover>
@@ -51,7 +61,12 @@ export function DatePicker({
           {date ? format(date, "PPP", { locale: es }) : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="center" sideOffset={4}>
+      <PopoverContent 
+        className="w-auto p-0" 
+        align={popoverAlign}
+        side={popoverSide}
+        sideOffset={popoverSideOffset}
+      >
         <Calendar
           mode="single"
           selected={date}
@@ -60,10 +75,11 @@ export function DatePicker({
           disabled={disabled}
           locale={es} // Pass Spanish locale to Calendar
           captionLayout={captionLayout}
-          fromYear={fromYear}
-          toYear={toYear}
+          fromYear={fromYear ?? 1900} // Pass through or use default
+          toYear={toYear ?? new Date().getFullYear()}     // Pass through or use default
         />
       </PopoverContent>
     </Popover>
   )
 }
+
