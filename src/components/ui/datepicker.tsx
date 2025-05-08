@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -39,11 +40,11 @@ export function DatePicker({
   placeholder = "Seleccione una fecha", 
   className, 
   disabled,
-  captionLayout = "dropdown-buttons",
+  captionLayout = "dropdown-buttons", // Default remains for clarity, Calendar will handle actual layout
   fromYear,
   toYear,
   popoverSide = "bottom", 
-  popoverAlign = "center", // Defaulted to center after previous request
+  popoverAlign = "center",
   popoverSideOffset = 10,
 }: DatePickerProps) {
   return (
@@ -62,7 +63,7 @@ export function DatePicker({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-[320px] p-0" // Increased width from w-auto
+        className="w-[320px] p-0" 
         align={popoverAlign}
         side={popoverSide}
         sideOffset={popoverSideOffset}
@@ -74,7 +75,7 @@ export function DatePicker({
           initialFocus
           disabled={disabled}
           locale={es}
-          captionLayout={captionLayout}
+          captionLayout={captionLayout} // Calendar will override this to "buttons" and use footer
           fromYear={fromYear ?? 1900} 
           toYear={toYear ?? new Date().getFullYear()}
         />
