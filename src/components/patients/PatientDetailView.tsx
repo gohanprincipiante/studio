@@ -14,11 +14,10 @@ import { Skeleton } from '../ui/skeleton';
 import { cn } from '@/lib/utils';
 
 interface PatientDetailViewProps {
-  patientPromise: Promise<Patient | undefined> | undefined; // Allow Patient to be undefined from promise
+  patientPromise: Promise<Patient | undefined> | undefined;
   patientId: string;
 }
 
-// Helper to parse YYYY-MM-DD string as local date
 const parseLocalDate = (dateString: string | undefined): Date | null => {
   if (!dateString) return null;
   const parts = dateString.split('-');
@@ -27,11 +26,9 @@ const parseLocalDate = (dateString: string | undefined): Date | null => {
     const month = parseInt(parts[1], 10) - 1;
     const day = parseInt(parts[2], 10);
     if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-      // Ensure UTC interpretation to avoid timezone shifts if dates are meant to be timezone-agnostic
       return new Date(Date.UTC(year, month, day));
     }
   }
-  // Fallback for other date string formats, attempting to parse as local and then converting to UTC for consistency
   const date = new Date(dateString);
   return isNaN(date.getTime()) ? null : new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
 };
@@ -54,10 +51,10 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
         .then(data => {
           if (data) {
             setPatient(data);
+            // setError(null); // Already set at the beginning of useEffect
           } else {
-            // This case handles if the promise resolves but with undefined data (e.g. patient not found but not an error)
             setError("Paciente no encontrado.");
-            setPatient(null);
+            setPatient(null); // Ensure patient is null if not found
           }
         })
         .catch(err => {
@@ -69,27 +66,25 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
           setIsLoading(false);
         });
     } else {
-      // Handle cases where patientPromise is not a valid promise
-      if (patientPromise !== undefined && patientPromise !== null) {
-        // If patientPromise exists but is not a thenable, it's an issue.
+      // Handle cases where patientPromise is not a valid promise (e.g., undefined, null)
+      if (patientPromise === undefined || patientPromise === null) {
+        setError("No se proporcionaron datos del paciente para cargar.");
+      } else {
+        // This case should be rare if patientPromise is typed correctly and originates from an async function
         console.error("patientPromise no es un objeto 'thenable' válido:", patientPromise);
         setError("No se pudieron cargar los datos del paciente (referencia de datos no válida).");
       }
-      // If patientPromise is undefined or null, it might be an initial state.
-      // The UI will show "Cargando..." or relevant error/no data message.
-      setIsLoading(false); // Ensure loading state is correctly set.
+      setIsLoading(false);
     }
   }, [patientPromise, patientId]);
 
 
   const handleFormSubmit = async (data: PatientFormData, id?: string) => {
-    // Simulate API call - TODO: Replace with actual Firebase update
     if (id && patient) {
-      const dobDate = parseLocalDate(data.dob); // Use UTC parsing
+      const dobDate = parseLocalDate(data.dob);
       const age = dobDate ? differenceInYears(new Date(), dobDate) : undefined; 
       const updatedPatient = { ...patient, ...data, age, id, updatedAt: new Date() };
       setPatient(updatedPatient);
-      // TODO: Persist updatedPatient to Firebase
       toast({ title: "Paciente Actualizado", description: `Los datos de ${data.fullName} han sido actualizados.` });
     }
     setIsEditing(false);
@@ -98,15 +93,13 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
   const getDisplayDate = (dateValue: Date | Timestamp | string | undefined): Date | null => {
     if (!dateValue) return null;
     if (typeof dateValue === 'string') {
-      return parseLocalDate(dateValue); // Uses UTC parsing
+      return parseLocalDate(dateValue);
     }
-    if (dateValue instanceof Date) { // Standard JS Date
-        // Ensure it's treated as UTC if it's from a local context
+    if (dateValue instanceof Date) {
         return new Date(Date.UTC(dateValue.getFullYear(), dateValue.getMonth(), dateValue.getDate()));
     }
-    if (typeof (dateValue as any).toDate === 'function') { // Firebase Timestamp
+    if (typeof (dateValue as any).toDate === 'function') {
         const tsDate = (dateValue as Timestamp).toDate();
-        // Timestamps are usually UTC, convert to JS Date object in UTC
         return new Date(Date.UTC(tsDate.getUTCFullYear(), tsDate.getUTCMonth(), tsDate.getUTCDate()));
     }
     return null;
@@ -135,15 +128,14 @@ const PatientDetailView: FC<PatientDetailViewProps> = ({ patientPromise, patient
     return <div className="text-destructive p-4 border border-destructive bg-destructive/10 rounded-md">{error}</div>;
   }
 
-  if (!patient) { // Covers null patient state after loading/error
+  if (!patient) {
     return <p className="text-muted-foreground py-4 text-center">Datos del paciente no disponibles o no encontrados.</p>;
   }
   
   const calculateAgeDisplay = (dobString: string | undefined): string => {
     if (!dobString) return 'N/A';
-    const birthDate = parseLocalDate(dobString); // Use UTC parsing
+    const birthDate = parseLocalDate(dobString);
     if (!birthDate) return 'N/A';
-    // Ensure 'today' is also UTC for correct age calculation
     const today = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate()));
     let age = today.getUTCFullYear() - birthDate.getUTCFullYear();
     const m = today.getUTCMonth() - birthDate.getUTCMonth();
