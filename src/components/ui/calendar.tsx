@@ -18,13 +18,19 @@ const CustomFooterContent: React.FC = () => {
 
   if (!currentMonth) return null;
 
-  const startYear = fromDate ? fromDate.getFullYear() : currentMonth.getFullYear() - 100;
-  const endYear = toDate ? toDate.getFullYear() : currentMonth.getFullYear();
+  const startYearVal = fromDate ? fromDate.getFullYear() : currentMonth.getFullYear() - 100;
+  const endYearVal = toDate ? toDate.getFullYear() : currentMonth.getFullYear();
 
-  const years: number[] = [];
-  for (let i = startYear; i <= endYear; i++) {
-    years.push(i);
+  const yearList: number[] = [];
+  // Ensure startYear is not greater than endYear
+  if (startYearVal <= endYearVal) {
+    for (let i = startYearVal; i <= endYearVal; i++) {
+      yearList.push(i);
+    }
   }
+  // Ensure the years are unique, although the loop should already guarantee this.
+  const years = Array.from(new Set(yearList.sort((a, b) => a - b)));
+
 
   const monthLabels: string[] = Array.from({ length: 12 }, (_, i) => {
     const monthDate = new Date(currentMonth.getFullYear(), i, 1);
@@ -49,9 +55,9 @@ const CustomFooterContent: React.FC = () => {
         <SelectPrimitive.Portal>
           <SelectPrimitive.Content 
             position="popper" 
-            side="top" 
+            side="bottom" // Changed from top to bottom
             align="center" 
-            className="max-h-56 z-[100] w-[--radix-select-trigger-width]" // Ensure z-index, max height and width
+            className="max-h-56 z-[100] w-[--radix-select-trigger-width]"
             sideOffset={5}
           >
             <SelectPrimitive.Viewport>
@@ -80,9 +86,9 @@ const CustomFooterContent: React.FC = () => {
         <SelectPrimitive.Portal>
           <SelectPrimitive.Content 
             position="popper" 
-            side="top" 
+            side="bottom" // Changed from top to bottom
             align="center" 
-            className="max-h-56 z-[100] w-[--radix-select-trigger-width]" // Ensure z-index, max height and width
+            className="max-h-56 z-[100] w-[--radix-select-trigger-width]"
             sideOffset={5}
           >
             <SelectPrimitive.Viewport>
@@ -109,11 +115,11 @@ function Calendar({
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-3", className)}
+      className={cn("p-3 w-full", className)} // Ensure calendar takes full width for popover content
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-        month: "space-y-4",
-        caption: "flex justify-center pt-1 relative items-center", // mb-4 removed, footer will handle spacing
+        month: "space-y-4 w-full", // Ensure month takes full width
+        caption: "flex justify-center pt-1 relative items-center",
         caption_label: "text-sm font-medium",
         nav: "space-x-1 flex items-center",
         nav_button: cn(
@@ -149,7 +155,7 @@ function Calendar({
         IconRight: (iconProps) => <ChevronRight {...iconProps} className={cn("h-4 w-4", iconProps.className)} />,
         Footer: CustomFooterContent,
       }}
-      captionLayout="buttons" // Use "buttons" to show only prev/next and label in caption
+      captionLayout="buttons"
       {...props}
     />
   )
@@ -157,3 +163,4 @@ function Calendar({
 Calendar.displayName = "Calendar"
 
 export { Calendar }
+
