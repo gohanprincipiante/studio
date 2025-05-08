@@ -32,9 +32,9 @@ export function DatePicker({
   placeholder = "Seleccione una fecha", 
   className, 
   disabled,
-  captionLayout,
-  fromYear,
-  toYear 
+  captionLayout = "dropdown-buttons",
+  fromYear = 1900,
+  toYear = new Date().getFullYear()
 }: DatePickerProps) {
   return (
     <Popover>
@@ -51,7 +51,7 @@ export function DatePicker({
           {date ? format(date, "PPP", { locale: es }) : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" side="bottom" sideOffset={10}>
+      <PopoverContent className="w-auto p-0" align="center" sideOffset={4}>
         <Calendar
           mode="single"
           selected={date}
