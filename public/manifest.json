@@ -1,0 +1,25 @@
+{
+  "name": "PatientPal",
+  "short_name": "PatientPal",
+  "description": "Gestiona expedientes de pacientes y citas de forma eficiente.",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0f2f5",
+  "theme_color": "#008080",
+  "scope": "/",
+  "orientation": "portrait-primary"
+}

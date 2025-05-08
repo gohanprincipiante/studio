@@ -19,6 +19,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'PatientPal - Gestión de Expedientes Médicos',
   description: 'Gestiona expedientes de pacientes y citas de forma eficiente.',
+  manifest: '/manifest.json', // Added manifest link
 };
 
 export default function RootLayout({
@@ -28,6 +29,25 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
+      <head>
+        <meta name="application-name" content="PatientPal" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="PatientPal" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="msapplication-config" content="/icons/browserconfig.xml" />
+        <meta name="msapplication-TileColor" content="#008080" />
+        <meta name="msapplication-tap-highlight" content="no" />
+        <meta name="theme-color" content="#008080" />
+
+        {/* 
+          It's generally recommended to let Next.js handle viewport meta tags.
+          If specific viewport settings are needed, they can be added here,
+          but often the default Next.js behavior is sufficient.
+          Example: <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, viewport-fit=cover" />
+        */}
+      </head>
       <body className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}>
         <SidebarProvider defaultOpen={true}>
           <div className="flex min-h-screen flex-col">
